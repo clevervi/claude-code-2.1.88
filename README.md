@@ -1,109 +1,70 @@
-# Source Extraction Notice
+# Claude Code Internals (v2.1.88)
 
-This directory contains the source code of `@anthropic-ai/claude-code@2.1.88`, extracted from the published npm package's source map (`cli.js.map`).
+![Build State](https://img.shields.io/badge/Research-Production--Ready-blue)
+![Claude Version](https://img.shields.io/badge/Claude--Code-v2.1.88-orange)
+![Security Status](https://img.shields.io/badge/Status-Hardened-green)
 
-## How the source was obtained
+A deep-dive research repository into the **architecture, prompts, and internal mechanics** of Anthropic's Claude Code agentic CLI.
 
-```sh
-npm pack @anthropic-ai/claude-code@2.1.88
-tar xzf anthropic-ai-claude-code-2.1.88.tgz
-# Extract sources from cli.js.map into source/
-node -e '
-const fs = require("fs"), path = require("path");
-const map = JSON.parse(fs.readFileSync("cli.js.map", "utf8"));
-for (let i = 0; i < map.sources.length; i++) {
-  if (map.sourcesContent[i] == null || map.sources[i].includes("node_modules")) continue;
-  const rel = map.sources[i].replace(/^\.\.\//g, "");
-  const out = path.join("source", rel);
-  fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, map.sourcesContent[i]);
-}'
+This project contains deobfuscated and organized source code (extracted from `@anthropic-ai/claude-code@2.1.88`), along with technical reports and security refinements developed to harden the agent's internal parser logic.
+
+---
+
+## 🚀 Mission
+
+The goal of this project is to provide a comprehensive reference for researchers and developers building high-quality agentic coding tools. We have analyzed the "Gold Standard" implementation and applied critical refinements to its internal robustness.
+
+- **[Architecture Deep-Dive](docs/ARCHITECTURE.md)**: Analysis of the CLI orchestrator, heartbeats, and state machine.
+- **[Security & Gating](docs/SECURITY.md)**: Review of the "Auto Mode" YOLO classifier and tool permissions.
+- **[Context Management](src/services/compact/)**: Studying the "Compaction" (Summarization) logic used for huge repositories.
+
+---
+
+## 📁 Repository Structure
+
+- **`src/`**: Reorganized and deobfuscated source tree for developer readability.
+- **`docs/`**: Technical reports on the project architecture and security reviews.
+- **`tests/`**: Standalone test suites for validating core parser refinements.
+- **`scripts/`**: Operational tools including the original extraction logic.
+
+---
+
+## 🛠️ Critical Hardening Applied
+
+As part of this research, the following logic refinements have been integrated into the `src/` tree:
+
+### 1. Robust YOLO Permission Gate
+We optimized the `yoloClassifier.ts` to prevent "unparseable decision" errors. The new logic handles non-greedy XML extraction and case-insensitivity, ensuring that security defaults (Deny-by-Default) are only triggered for genuine risks, not malformed model output.
+- **Test**: `npm run test:yolo`
+
+### 2. Context Compaction Refinement
+The `prompt.ts` parser in the compaction service was hardened to correctly strip `<analysis>` scratchpads and extract summaries even from truncated or chatty model responses.
+- **Test**: `npm run test:compact`
+
+---
+
+## 🏁 Getting Started
+
+### Prerequisites
+- Node.js >= 18
+- Bun (Optional: for high-speed test execution)
+
+### Installation
+```bash
+npm install
 ```
 
-## Usage
-
-The bundled `cli.js` is self-contained and runs directly with Node.js >= 18:
-
-```sh
-node cli.js --version          # 2.1.88 (Claude Code)
-node cli.js --help             # show all options
-node cli.js -p "hello world"   # non-interactive one-shot
-node cli.js                    # interactive REPL
-```
-
-Or install globally / symlink:
-
-```sh
-npm install -g @anthropic-ai/claude-code@2.1.88
-# or
-ln -s "$(pwd)/cli.js" /usr/local/bin/claude
-```
-
-## Rebuilding from source
-
-Rebuilding from the extracted source is **not feasible** because:
-
-- The code uses `import { feature } from 'bun:bundle'` (Bun bundler compile-time API)
-- The original `package.json` with ~hundreds of build/dev dependencies is not published
-- Build configuration (tsconfig, bundler config) is not included in the source map
-- 2,850 bundled `node_modules` dependencies are only present as source map entries
-
-The extracted `source/` tree (1,906 files, 35 MB) is useful for **reading and studying** the internals, not for rebuilding.
-
-## Directory layout
-
-```
-cli.js           # 13 MB self-contained Node.js bundle (the actual executable)
-cli.js.map       # 57 MB source map (contains all original sources)
-source/          # extracted source tree:
-  src/           #   1,902 TypeScript/TSX application files
-  vendor/        #   4 native module source stubs
-package.json     # published package manifest (no build deps)
-README.md        # this file
+### Running Verification Tests
+Ensure the hardened parsers are operating correctly in your environment:
+```bash
+npm test
 ```
 
 ---
 
-# Claude Code
+## 🤝 Contributing
+Please see **[CONTRIBUTING.md](CONTRIBUTING.md)** for guidelines on how to submit research findings or feature analysis.
 
-![](https://img.shields.io/badge/Node.js-18%2B-brightgreen?style=flat-square) [![npm]](https://www.npmjs.com/package/@anthropic-ai/claude-code)
+---
 
-[npm]: https://img.shields.io/npm/v/@anthropic-ai/claude-code.svg?style=flat-square
-
-Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows -- all through natural language commands. Use it in your terminal, IDE, or tag @claude on Github.
-
-**Learn more at [Claude Code Homepage](https://claude.com/product/claude-code)** | [Documentation](https://code.claude.com/docs/en/overview)
-
-<img src="https://github.com/anthropics/claude-code/blob/main/demo.gif?raw=1" />
-
-## Get started
-
-1. Install Claude Code:
-
-```sh
-npm install -g @anthropic-ai/claude-code
-```
-
-2. Navigate to your project directory and run `claude`.
-
-## Reporting Bugs
-
-We welcome your feedback. Use the `/bug` command to report issues directly within Claude Code, or file a [GitHub issue](https://github.com/anthropics/claude-code/issues).
-
-## Connect on Discord
-
-Join the [Claude Developers Discord](https://anthropic.com/discord) to connect with other developers using Claude Code. Get help, share feedback, and discuss your projects with the community.
-
-## Data collection, usage, and retention
-
-When you use Claude Code, we collect feedback, which includes usage data (such as code acceptance or rejections), associated conversation data, and user feedback submitted via the `/bug` command.
-
-### How we use your data
-
-See our [data usage policies](https://code.claude.com/docs/en/data-usage).
-
-### Privacy safeguards
-
-We have implemented several safeguards to protect your data, including limited retention periods for sensitive information and restricted access to user session data.
-
-For full details, please review our [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms) and [Privacy Policy](https://www.anthropic.com/legal/privacy).
+*Disclaimer: This is an unofficial research project intended strictly for educational and security-research purposes. Claude Code is a trademark of Anthropic PBC. All content in `src/` is derived from publicly available npm bundles.*
